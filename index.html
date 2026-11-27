@@ -407,9 +407,13 @@ async function boot() {
   $('bootscreen').hidden = true; $('title').hidden = false; $('start').focus({preventScroll: true});
 }
 boot();
+// download the whole film into memory during the boot sequence, so no shot ever waits on the network
+let started = false;
+fetch('emma.mp4').then((r) => r.ok ? r.blob() : null).then((b) => {
+  if (b && !started) { film.src = URL.createObjectURL(b); film.load(); }
+}).catch(() => {});
 
 // ---------------------------------------------------------------- 2. PRESS START -> player select -> 3, 2, 1
-let started = false;
 $('start').addEventListener('click', async () => {
   if (started) return; started = true;
   audio(); coin();
