@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EMMA vs. The Whole Day</title>
+<meta name="description" content="Press start.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=VT323&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* A game console booting up: amber boot code on a glowing CRT, then the title, then the film. */
+:root { --void:#050204; --amber:#ffb43a; --amberd:#a8701c; --red:#ff3b2f; --gold:#ffd34d; --ink:#fff4e6; --muted:#b58f6a;
+  --display:'Anton', Impact, 'Arial Narrow', sans-serif; --crt:'VT323', 'IBM Plex Mono', ui-monospace, monospace; --mono:'IBM Plex Mono', ui-monospace, monospace; color-scheme: dark; }
+[hidden] { display:none !important; }
+html, body { height:100%; }
+body { margin:0; overflow:hidden; background:var(--void); color:var(--ink); font-family:var(--crt); -webkit-tap-highlight-color:transparent; }
+button { font:inherit; color:inherit; background:none; border:0; cursor:pointer; }
+
+/* ---------- the CRT ---------- */
+#crt { position:fixed; inset:0; z-index:5; background: radial-gradient(130% 90% at 50% 45%, #1c0a05 0%, #0b0403 55%, #020101 100%); transition:opacity 1s ease; }
+#crt.gone { opacity:0; pointer-events:none; }
+#crt::before { content:""; position:absolute; inset:0; pointer-events:none; z-index:3;
+  background: repeating-linear-gradient(180deg, rgba(0,0,0,.28) 0 2px, rgba(0,0,0,0) 2px 4px); mix-blend-mode:multiply; }
+#crt::after { content:""; position:absolute; inset:0; pointer-events:none; z-index:4; box-shadow: inset 0 0 140px 40px rgba(0,0,0,.85); animation: flicker 4s steps(40) infinite; }
+@keyframes flicker { 0%,100% { opacity:1 } 47% { opacity:.92 } 48% { opacity:1 } 82% { opacity:.96 } }
+.screen { position:absolute; inset:0; padding: calc(env(safe-area-inset-top,0px) + 22px) max(18px, env(safe-area-inset-left,0px)) calc(env(safe-area-inset-bottom,0px) + 22px); display:flex; flex-direction:column; }
+.glow { color:var(--amber); text-shadow: 0 0 6px rgba(255,180,58,.75), 0 0 18px rgba(255,120,30,.35); }
+#log { font-size: clamp(17px, 4.6vw, 22px); line-height:1.25; white-space:pre-wrap; word-break:break-word; margin:0; }
+#log .hi { color:var(--gold); } #log .rd { color:var(--red); text-shadow:0 0 8px rgba(255,59,47,.7); } #log .dim { color:var(--amberd); }
+#hex { flex:1; min-height:0; overflow:hidden; margin:10px 0 0; font-size: clamp(12px, 3.2vw, 15px); line-height:1.2; color:var(--amberd); white-space:pre; opacity:.9; }
+#bar { margin-top:10px; font-size: clamp(17px, 4.6vw, 22px); }
+/* title */
+#title { position:absolute; inset:0; display:grid; place-items:center; text-align:center; padding:0 18px; }
+.logo { font: 400 clamp(5rem, 30vw, 11rem)/.86 var(--display); letter-spacing:.02em; color:#fff1d8;
+  text-shadow: 0 0 2px #fff, 0 0 24px rgba(255,80,40,.9), 0 0 60px rgba(255,40,20,.6), 0 8px 0 #7a1408; }
+.vs { font: 400 clamp(1.3rem, 6vw, 2.2rem)/1 var(--display); letter-spacing:.22em; color:var(--red); margin-top:14px; text-shadow:0 0 14px rgba(255,59,47,.8); }
+#start { margin-top: 10vh; font: 400 clamp(2.2rem, 10vw, 3.4rem)/1 var(--crt); letter-spacing:.12em; padding:14px 26px; border:2px solid var(--amber); border-radius:6px; animation: blink 1.05s steps(1) infinite; }
+#start:focus-visible { outline:2px solid var(--gold); outline-offset:6px; }
+@keyframes blink { 55% { opacity:.15 } }
+.sub { margin-top:16px; font-size: clamp(15px, 4vw, 18px); color:var(--muted); }
+/* player select */
+#select { position:absolute; inset:0; display:flex; flex-direction:column; justify-content:center; padding:0 max(22px, 7vw); }
+#select h2 { margin:0 0 22px; font: 400 clamp(2rem, 10vw, 3.2rem)/1 var(--display); letter-spacing:.06em; color:var(--gold); text-shadow:0 0 16px rgba(255,211,77,.6); }
+.row { display:flex; justify-content:space-between; gap:12px; font-size: clamp(20px, 5.6vw, 28px); padding:6px 0; border-bottom:1px dashed rgba(255,180,58,.25); opacity:0; transform:translateX(-12px); transition:opacity .25s, transform .25s; }
+.row.on { opacity:1; transform:none; } .row b { color:var(--ink); font-weight:400; text-align:right; }
+.howto { margin-top:26px; display:flex; align-items:center; gap:16px; font-size: clamp(18px, 5vw, 24px); color:var(--ink); opacity:0; transition:opacity .4s; }
+.howto.on { opacity:1; }
+.mini { width:58px; height:58px; flex:0 0 58px; }
+#count { position:absolute; inset:0; display:grid; place-items:center; font: 400 clamp(8rem, 45vw, 16rem)/1 var(--display); color:var(--gold); text-shadow:0 0 40px rgba(255,180,58,.8); pointer-events:none; }
+
+/* ---------- the film ---------- */
+#stage { position:fixed; inset:0; background:#000; }
+#film { width:100%; height:100%; object-fit:contain; background:#000; display:block; }
+@media (max-aspect-ratio: 10/16) { #film { object-fit:cover; } }
+#slow { position:fixed; inset:0; pointer-events:none; opacity:0; transition:opacity .35s; background: radial-gradient(closest-side, rgba(0,0,0,0) 55%, rgba(30,0,0,.55) 100%); }
+#slow.on { opacity:1; }
+.target { position:fixed; z-index:6; width:var(--d); height:var(--d); margin:calc(var(--d) / -2) 0 0 calc(var(--d) / -2); border-radius:50%; display:grid; place-items:center; touch-action:manipulation; }
+.target .ring { position:absolute; inset:0; border-radius:50%; border:4px dashed var(--gold); box-shadow:0 0 22px rgba(255,211,77,.9), inset 0 0 22px rgba(255,120,30,.6); animation: spin 2.4s linear infinite; }
+.target .pulse { position:absolute; inset:14%; border-radius:50%; background: radial-gradient(circle, rgba(255,240,180,.55), rgba(255,120,30,.25) 55%, rgba(255,60,20,0) 72%); animation: pulse .8s ease-in-out infinite alternate; }
+.target .cross { position:absolute; inset:0; background: linear-gradient(var(--gold),var(--gold)) center/2px 30% no-repeat, linear-gradient(90deg,var(--gold),var(--gold)) center/30% 2px no-repeat; opacity:.9; }
+.target span { position:relative; font: 400 calc(var(--d) * .2)/1 var(--display); letter-spacing:.06em; color:#fff; text-shadow:0 0 10px #ff3b2f, 0 0 22px #ff3b2f, 0 2px 0 #7a1408; transform:translateY(calc(var(--d) * .66)); white-space:nowrap; }
+.target.hit { animation: pop .28s ease-out forwards; pointer-events:none; }
+@keyframes spin { to { transform:rotate(360deg) } }
+@keyframes pulse { from { transform:scale(.86); opacity:.7 } to { transform:scale(1.06); opacity:1 } }
+@keyframes pop { to { transform:scale(1.8); opacity:0 } }
+#flash { position:fixed; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:7; }
+#controls { position:fixed; left:0; right:0; bottom:calc(env(safe-area-inset-bottom,0px) + 18px); z-index:8; display:flex; gap:10px; justify-content:center; flex-wrap:wrap; padding:0 16px; opacity:0; pointer-events:none; transition:opacity 1s; }
+#controls.on { opacity:1; pointer-events:auto; }
+#controls button { font: 600 13px var(--mono); letter-spacing:.06em; padding:12px 20px; border-radius:999px; border:1px solid rgba(255,180,58,.5); background:rgba(10,4,2,.75); color:var(--ink); }
+#source { position:fixed; inset:0; z-index:20; background:rgba(5,2,4,.97); display:flex; flex-direction:column; padding:12px 16px; font-family:var(--mono); }
+.srcbar { display:flex; justify-content:space-between; align-items:center; gap:12px; padding-bottom:10px; border-bottom:1px solid rgba(255,180,58,.3); color:var(--muted); font-size:12px; }
+.srcbar button { font:600 12px var(--mono); padding:8px 14px; border-radius:999px; border:1px solid rgba(255,180,58,.5); }
+#srcpre { flex:1; min-width:0; margin:0; padding-top:12px; overflow:auto; font:12px/1.55 var(--mono); white-space:pre; color:#e9dccb; }
+#srcpre .k { color:#ff6a4d; } #srcpre .n { color:var(--gold); } #srcpre .s { color:#9be37a; } #srcpre .c { color:#8a7360; font-style:italic; }
+@media (prefers-reduced-motion: reduce) { #start, .target .ring, .target .pulse, #crt::after { animation:none !important; } }
+</style>
+</head>
+<body>
+<div id="stage"><video id="film" src="emma.mp4" playsinline preload="auto"></video></div>
+<div id="slow"></div>
+<div id="flash"></div>
+
+<div id="crt">
+  <div class="screen" id="bootscreen">
+    <pre id="log" class="glow"></pre>
+    <pre id="hex"></pre>
+    <div id="bar" class="glow"></div>
+  </div>
+  <div id="title" hidden>
+    <div>
+      <div class="logo">EMMA</div>
+      <div class="vs">VS. THE WHOLE DAY</div>
+      <button id="start" class="glow" type="button">PRESS START</button>
+      <div class="sub">sound on &middot; about a minute and a half</div>
+    </div>
+  </div>
+  <div id="select" class="glow" hidden>
+    <h2>PLAYER 1</h2>
+    <div class="row"><span>HERO</span><b>EMMA</b></div>
+    <div class="row"><span>WEAPON</span><b>WEBS</b></div>
+    <div class="row"><span>BACKUP</span><b>1 GOOD DOG</b></div>
+    <div class="row"><span>DIFFICULTY</span><b>THANKSGIVING</b></div>
+    <div class="row"><span>MISSION</span><b>CLEAR THE BAD DAYS</b></div>
+    <div class="howto"><svg class="mini" viewBox="0 0 60 60" aria-hidden="true"><circle cx="30" cy="30" r="26" fill="none" stroke="#ffd34d" stroke-width="3" stroke-dasharray="6 5"/><circle cx="30" cy="30" r="14" fill="rgba(255,190,90,.45)"/><path d="M30 18v24M18 30h24" stroke="#ffd34d" stroke-width="2"/></svg>
+      <div>When time slows down,<br>tap <span style="color:var(--gold)">SHOOT!</span></div></div>
+  </div>
+  <div id="count" hidden></div>
+</div>
+
+<div id="controls">
+  <button id="viewsrc" type="button">view the code</button>
+  <button id="replay" type="button">play again</button>
+</div>
+<div id="source" hidden>
+  <div class="srcbar"><span>the code behind the film, written for you</span><button id="closesrc" type="button">close</button></div>
+  <pre id="srcpre"></pre>
+</div>
+
+<script type="application/json" id="cues">[{"t": 14.58, "pre": 0.33, "x": 242, "y": 951, "ok": true, "name": "BAD DAY", "rt": 15.05}, {"t": 15.98, "pre": 0.23, "x": 350, "y": 1435, "ok": true, "name": "STRESS", "rt": 17.022}, {"t": 17.38, "pre": 0.23, "x": 510, "y": 1018, "ok": true, "name": "DRAMA", "rt": 18.994}, {"t": 18.78, "pre": 0.23, "x": 769, "y": 941, "ok": true, "name": "OVERTHINKING", "rt": 20.967}, {"t": 20.18, "pre": 0.23, "x": 333, "y": 477, "ok": true, "name": "BURNT PIE", "rt": 22.939}, {"t": 21.58, "pre": 0.6, "x": 645, "y": 517, "ok": true, "name": "TRAFFIC", "rt": 25.438}, {"t": 27.62, "pre": 0.17, "x": 561, "y": 963, "ok": true, "name": "THE WHOLE DAY", "boss": true, "rt": 31.965}]</script>
+<script type="text/plain" id="code">// THE STORY: one clock (seconds). Where everyone is, what pose they hold, and where the camera stands.
+import {V3, pathAt, lerp, lerp3, ease, easeIn, easeOut, seg, clamp01, shake, smooth} from './util';
+
+export const FPS = 60;
+export const DURATION = 47;
+export const T_DAWN = 30;                     // the cut to the rooftop at sunrise
+
+// ---------------------------------------------------------------- the swing (hip-centre path)
+const HIP_KEYS: {t: number; p: V3}[] = [
+  {t: 3.2, p: [-68, 17, -3]},
+  {t: 3.5, p: [-64, 15, -3]},
+  {t: 4.6, p: [-49, 10.2, -2.5]},
+  {t: 5.7, p: [-35, 15, -2]},
+  {t: 6.3, p: [-29, 16.8, -2]},
+  {t: 7.4, p: [-17, 9.8, -1.8]},
+  {t: 8.4, p: [-6, 13.5, -1.4]},
+  {t: 8.9, p: [-2.6, 14.2, -0.8]},
+];
+export const A1: V3 = [-49, 30.5, -9];
+export const A2: V3 = [-17, 29.5, -8];
+export const LAND = 9.6;
+export const PORTAL: V3 = [9, 0, 0];
+export const BOSS_X = 11.5;
+
+export const DEMONS = [
+  {name: 'BAD DAY', emerge: 12.4, kill: 15.0, z: -1.5},
+  {name: 'STRESS', emerge: 12.9, kill: 16.4, z: 1.2},
+  {name: 'DRAMA', emerge: 13.5, kill: 17.8, z: -0.3},
+  {name: 'OVERTHINKING', emerge: 14.2, kill: 19.2, z: 1.7},
+  {name: 'BURNT PIE', emerge: 15.0, kill: 20.6, z: -1.1},
+  {name: 'TRAFFIC', emerge: 15.9, kill: 22.0, z: 0.6},
+];
+export const BOSS = {emerge: 23.0, roar: 25.0, fire: 27.8, kill: 28.8};
+
+export function demonState(i: number, t: number) {
+  const d = DEMONS[i];
+  if (t < d.emerge) return null;
+  const rise = easeOut(seg(t, d.emerge, d.emerge + 0.9));
+  const walk = Math.max(0, t - d.emerge - 0.9);
+  const x = Math.max(3.0 + i * 0.25, PORTAL[0] + 0.4 - walk * 0.85);
+  const p: V3 = [x, lerp(-1.9, 0, rise), d.z * lerp(0.4, 1, rise)];
+  return {p, rise, walk, alive: t < d.kill, dead: t >= d.kill, since: t - d.kill};
+}
+export function bossState(t: number) {
+  if (t < BOSS.emerge) return null;
+  const r = easeOut(seg(t, BOSS.emerge, BOSS.emerge + 2.2));
+  return {p: [BOSS_X, lerp(-8.5, 0, r), 0] as V3, rise: r, dead: t >= BOSS.kill, since: t - BOSS.kill};
+}
+
+// ---------------------------------------------------------------- the hero
+// returns hip-centre position, a world tilt about z (her pitch while facing +x), yaw, and a pose
+export type Pose = {
+  sp?: number; nk?: number; hx?: number; hy?: number;                      // spine fwd, head
+  lsx?: number; lsz?: number; lex?: number; rsx?: number; rsz?: number; rex?: number;   // shoulders/elbows
+  lhx?: number; lhz?: number; lkx?: number; rhx?: number; rhz?: number; rkx?: number;   // hips/knees
+  mask?: number;                                                          // 1 = over eyes, 0 = pushed up
+};
+export function mixPose(a: Pose, b: Pose, t: number): Pose {
+  const o: any = {}; const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  keys.forEach((k) => { o[k] = lerp((a as any)[k] ?? 0, (b as any)[k] ?? 0, t); });
+  return o;
+}
+const P_SWING = (ph: number): Pose => ({rsx: -3.05, rsz: -0.15, rex: -0.05, lsx: 0.6, lsz: 0.7, lex: -0.9, lhx: -0.9 + 0.35 * ph, rhx: -0.35 - 0.3 * ph, lkx: 1.3, rkx: 0.7, sp: 0.1, nk: -0.25, mask: 1});
+const P_TUCK: Pose = {rsx: -1.6, lsx: -1.6, rex: -1.2, lex: -1.2, lhx: -2.1, rhx: -2.1, lkx: 2.4, rkx: 2.4, sp: 0.5, nk: 0.3, mask: 1};
+const P_LAND: Pose = {sp: 0.55, nk: -0.55, rsx: -0.9, rsz: -0.1, rex: -0.2, lsx: 0.9, lsz: 0.9, lex: -0.3, lhx: -1.6, rhx: 0.25, lkx: 2.2, rkx: 1.9, rhz: -0.15, lhz: 0.2, mask: 1};
+const P_STAND: Pose = {sp: 0.12, nk: -0.05, rsx: -0.35, rsz: -0.25, rex: -1.3, lsx: -0.6, lsz: 0.25, lex: -1.7, lhx: -0.45, rhx: 0.25, lkx: 0.55, rkx: 0.25, lhz: 0.12, rhz: -0.12, mask: 1};
+const P_SHOOT: Pose = {sp: 0.05, nk: 0.05, rsx: -1.58, rsz: -0.05, rex: -0.04, lsx: -0.9, lsz: 0.35, lex: -1.9, lhx: -0.5, rhx: 0.35, lkx: 0.45, rkx: 0.2, lhz: 0.15, rhz: -0.15, mask: 1};
+const P_TWIN: Pose = {sp: -0.05, nk: 0.15, rsx: -1.9, rsz: -0.25, rex: -0.03, lsx: -1.9, lsz: 0.25, lex: -0.03, lhx: -0.65, rhx: 0.5, lkx: 0.5, rkx: 0.15, lhz: 0.2, rhz: -0.2, hx: -0.25, mask: 1};
+const P_YANK: Pose = {...P_TWIN, rsx: -1.2, lsx: -1.2, rex: -1.0, lex: -1.0, sp: -0.25, lhx: -0.2, rhx: 0.7, lkx: 0.35, rkx: 0.5};
+export const P_SIT: Pose = {sp: 0.12, nk: 0.18, hx: 0, rsx: 0.25, rsz: -0.2, rex: -0.35, lsx: -0.15, lsz: 0.75, lex: -0.5, lhx: -1.55, rhx: -1.5, lkx: 1.35, rkx: 1.55, lhz: 0.08, rhz: -0.06, mask: 0};
+
+function swingAttached(t: number): V3 | null {
+  if (t >= 3.2 && t < 5.7) return A1;
+  if (t >= 6.3 && t < 8.4) return A2;
+  return null;
+}
+function tiltTo(h: V3, a: V3) { return Math.atan2(-(a[0] - h[0]), a[1] - h[1]); }
+
+export type Hero = {hip: V3; tilt: number; yaw: number; pose: Pose; web?: {from: V3; to: V3; a: number}[]; hand: V3};
+
+// world position of her right hand (approximate, analytic) for the web lines
+function handPos(hip: V3, tilt: number, yaw: number, mode: 'up' | 'fwd' | 'twinL' | 'twinR'): V3 {
+  if (mode === 'up') { const L = 1.12; return [hip[0] - Math.sin(tilt) * L, hip[1] + Math.cos(tilt) * L, hip[2] + 0.18]; }
+  const side = mode === 'twinL' ? 0.22 : -0.22, fwd = 0.62, up = 0.5 + (mode === 'fwd' ? 0 : 0.12);
+  // local (side, up, fwd) rotated by yaw (local +z = forward)
+  return [hip[0] + side * Math.cos(yaw) + fwd * Math.sin(yaw), hip[1] + up, hip[2] - side * Math.sin(yaw) + fwd * Math.cos(yaw)];
+}
+
+export function heroAt(t: number): Hero {
+  const yawX = Math.PI / 2;
+  if (t < 8.9) {                                          // swinging
+    const hip = pathAt(HIP_KEYS, t);
+    const att = swingAttached(t);
+    let tilt: number;
+    if (att) tilt = tiltTo(hip, att);
+    else if (t < 6.3) tilt = lerp(tiltTo(pathAt(HIP_KEYS, 5.7), A1), tiltTo(pathAt(HIP_KEYS, 6.3), A2), smooth(seg(t, 5.7, 6.3)));
+    else tilt = lerp(tiltTo(pathAt(HIP_KEYS, 8.399), A2), -0.4, smooth(seg(t, 8.4, 8.9)));
+    const ph = Math.sin(t * 2.4);
+    let pose = P_SWING(ph);
+    if (!att) pose = mixPose(P_SWING(ph), P_TUCK, smooth(seg(t, t < 6.3 ? 5.7 : 8.4, t < 6.3 ? 5.95 : 8.75)) * (t < 6.3 ? Math.sin(Math.PI * seg(t, 5.7, 6.3)) : 1));
+    const hand = handPos(hip, tilt, yawX, 'up');
+    const webs: Hero['web'] = [];
+    if (att) webs.push({from: hand, to: att, a: 1});
+    if (t >= 6.12 && t < 6.3) { const k = seg(t, 6.12, 6.3); webs.push({from: hand, to: lerp3(hand, A2, k), a: 1}); }
+    if (t >= 3.2 && t < 3.5) {}
+    return {hip, tilt, yaw: yawX, pose, web: webs, hand};
+  }
+  if (t < LAND) {                                         // front flip and drop
+    const k = seg(t, 8.9, LAND);
+    const a = pathAt(HIP_KEYS, 8.9);
+    const hip: V3 = [lerp(a[0], 0, ease(k)), lerp(a[1], 0.58, easeIn(k)), lerp(a[2], 0, ease(k))];
+    const tilt = lerp(-0.4, -Math.PI * 2, easeOut(seg(k, 0, 0.8)));
+    const pose = mixPose(P_TUCK, P_LAND, smooth(seg(k, 0.6, 1)));
+    return {hip, tilt, yaw: yawX, pose, web: [], hand: hip};
+  }
+  if (t < T_DAWN) {
+    let hip: V3 = [0, 0.58, 0], pose: Pose = P_LAND, yaw = yawX;
+    if (t < 11.4) { const k = smooth(seg(t, 10.7, 11.4)); hip = [0, lerp(0.58, 0.9, k), 0]; pose = mixPose(P_LAND, P_STAND, k); }
+    else hip = [0, 0.9 + Math.sin(t * 2.2) * 0.008, 0];
+    if (t >= 11.4) pose = {...P_STAND};
+    const webs: Hero['web'] = [];
+    // shots at the six demons
+    for (let i = 0; i < DEMONS.length; i++) {
+      const d = DEMONS[i], s = demonState(i, Math.min(t, d.kill));
+      const w = seg(t, d.kill - 0.55, d.kill - 0.3) * (1 - seg(t, d.kill + 0.15, d.kill + 0.4));
+      if (w > 0 && s) {
+        const tgt: V3 = [s.p[0], 1.05, s.p[2]];
+        yaw = lerp(yaw, Math.atan2(tgt[0], tgt[2]), smooth(w));
+        pose = mixPose(pose, P_SHOOT, smooth(w));
+        const hand = handPos(hip, 0, yaw, 'fwd');
+        const ext = seg(t, d.kill - 0.3, d.kill - 0.06);
+        if (ext > 0 && t < d.kill + 0.35) webs.push({from: hand, to: lerp3(hand, tgt, ext), a: 1 - seg(t, d.kill + 0.05, d.kill + 0.35)});
+      }
+    }
+    // the boss: look down at the dog, then twin webs and a yank
+    if (t >= 25.4 && t < 27.4) {
+      const k = smooth(seg(t, 25.6, 26.0)) * (1 - smooth(seg(t, 26.8, 27.2)));
+      pose = {...pose, nk: lerp(pose.nk ?? 0, 0.45, k), hy: lerp(0, -0.7, k)};
+    }
+    if (t >= 27.3) {
+      const k = smooth(seg(t, 27.3, 27.75)), y = smooth(seg(t, 28.35, 28.75)) * (1 - smooth(seg(t, 29.2, 30)));
+      pose = mixPose(mixPose(pose, P_TWIN, k), P_YANK, y);
+      const tgt: V3 = [BOSS_X - 1.2, 4.6, 0];
+      const ext = seg(t, BOSS.fire, BOSS.fire + 0.22), fade = 1 - seg(t, BOSS.kill + 0.1, BOSS.kill + 0.5);
+      if (ext > 0 && fade > 0) {
+        const hl = handPos(hip, 0, yaw, 'twinL'), hr = handPos(hip, 0, yaw, 'twinR');
+        webs.push({from: hl, to: lerp3(hl, [tgt[0], tgt[1] + 0.6, 0.7], ext), a: fade});
+        webs.push({from: hr, to: lerp3(hr, [tgt[0], tgt[1] - 0.4, -0.7], ext), a: fade});
+      }
+    }
+    return {hip, tilt: 0, yaw, pose, web: webs, hand: hip};
+  }
+  // the rooftop at sunrise: sitting on the ledge, facing the sun (-z), mask pushed up
+  const br = Math.sin(t * 1.4) * 0.006;
+  return {hip: [0, 0.62 + br, -5.95], tilt: 0, yaw: Math.PI, pose: {...P_SIT, hy: -0.12 + Math.sin(t * 0.4) * 0.05, hx: 0.12 + Math.sin(t * 0.3) * 0.03}, web: [], hand: [0, 0, 0]};
+}
+
+// ---------------------------------------------------------------- the dog
+export type DogS = {p: V3; tilt: number; yaw: number; mode: 'ride' | 'run' | 'stand' | 'bark' | 'sit' | 'hop'; lean?: number};
+export function dogAt(t: number, h: Hero): DogS {
+  if (t < LAND) {                                         // riding on her back, holding on
+    const back: V3 = [-0.26, 0.22, 0];
+    const c = Math.cos(h.tilt), s = Math.sin(h.tilt);
+    return {p: [h.hip[0] + back[0] * c - back[1] * s, h.hip[1] + back[0] * s + back[1] * c, h.hip[2] - 0.02], tilt: h.tilt - 0.35, yaw: Math.PI / 2, mode: 'ride'};
+  }
+  if (t < 10.2) {                                         // hops off and lands next to her
+    const k = seg(t, LAND, 10.2);
+    const a: V3 = [-0.4, 0.75, 0], b: V3 = [-0.85, 0, 0.85];
+    return {p: [lerp(a[0], b[0], k), lerp(a[1], b[1], k) + Math.sin(k * Math.PI) * 0.45, lerp(a[2], b[2], k)], tilt: lerp(-0.5, 0, k), yaw: Math.PI / 2, mode: 'hop'};
+  }
+  if (t < T_DAWN) {
+    const barking = (t > 17.3 && t < 18.4) || (t > 26.5 && t < 27.4) || (t > 13.0 && t < 13.8);
+    return {p: [-0.85, 0, 0.85], tilt: 0, yaw: Math.PI / 2 - 0.15, mode: barking ? 'bark' : 'stand'};
+  }
+  return {p: [-0.62, 0.5, -5.85], tilt: 0, yaw: Math.PI, mode: 'sit', lean: 0.22};
+}
+
+// ---------------------------------------------------------------- the camera: a shot list with hard cuts
+export type Cam = {pos: V3; look: V3; fov: number; roll?: number};
+type Shot = {a: number; b: number; f: (t: number, k: number) => Cam};
+const hipNow = (t: number) => heroAt(t).hip;
+export const SHOTS: Shot[] = [
+  {a: 0, b: 3.5, f: (t, k) => ({pos: lerp3([-104, 46, 1], [-84, 19, 2], ease(k)), look: lerp3([-40, 14, 0], [-52, 12, -1], ease(k)), fov: 52})},
+  {a: 3.5, b: 6.2, f: (t) => { const h = hipNow(t); return {pos: [-45.5, 1.7, 2.6], look: [h[0] + 1.2, h[1] - 0.2, h[2]], fov: 62}; }},
+  {a: 6.2, b: 8.6, f: (t) => { const h = hipNow(t); return {pos: [h[0] - 4.0, h[1] + 1.1, h[2] + 2.4], look: [h[0] + 2.4, h[1] - 0.5, h[2] - 0.2], fov: 50}; }},
+  {a: 8.6, b: 9.55, f: (t) => { const h = heroAt(t).hip; return {pos: [3.4, 0.45, 2.9], look: [h[0] * 0.8, h[1] - 0.1, h[2]], fov: 56}; }},
+  {a: 9.55, b: 11.5, f: (t, k) => ({pos: add(lerp3([2.7, 0.35, 2.0], [2.4, 0.45, 1.85], k), shake(t, 0.05 * (1 - seg(t, 9.6, 10.3)))), look: lerp3([-0.3, 0.7, 0.3], [-0.3, 0.95, 0.3], ease(k)), fov: 48})},
+  {a: 11.5, b: 14.2, f: (t, k) => ({pos: add(lerp3([-2.6, 1.9, 0.45], [-2.3, 1.85, 0.4], k), shake(t, 0.025 * seg(t, 11.6, 12.0) * (1 - seg(t, 12.6, 13.2)))), look: [9, 1.0, 0.2], fov: 48})},
+  {a: 14.2, b: 15.7, f: (t, k) => ({pos: lerp3([-1.8, 1.74, -0.3], [-1.6, 1.72, -0.28], k), look: [6, 1.1, -0.2], fov: 46})},
+  {a: 15.7, b: 17.1, f: (t, k) => ({pos: add(lerp3([11.8, 2.3, 1.6], [11.4, 2.2, 1.5], k), shake(t, 0.03 * seg(t, 16.4, 16.5) * (1 - seg(t, 16.5, 16.9)))), look: [2, 0.9, 0], fov: 38})},
+  {a: 17.1, b: 18.5, f: (t, k) => ({pos: lerp3([-4.3, 0.55, 1.0], [-4.0, 0.58, 0.98], k), look: [3, 1.0, 0.25], fov: 46})},
+  {a: 18.5, b: 19.9, f: (t, k) => { const a = lerp(2.95, 2.75, ease(k)); return {pos: [Math.cos(a) * 4.2, 1.35, Math.sin(a) * 4.2], look: [2.0, 1.05, 0.6], fov: 54}; }},
+  {a: 19.9, b: 23.0, f: (t, k) => ({pos: lerp3([-3.8, 6.6, 0.6], [-3.4, 6.1, 0.6], k), look: [3.0, 0, 0.2], fov: 52})},
+  {a: 23.0, b: 25.4, f: (t, k) => ({pos: add(lerp3([-3.6, 0.5, 1.0], [-3.9, 0.45, 1.05], k), shake(t, 0.06 * seg(t, 23.1, 23.6) * (1 - seg(t, 24.6, 25.0)) + 0.09 * seg(t, 25.0, 25.1) * (1 - seg(t, 25.1, 25.4)))), look: lerp3([9, 2.5, 0], [9.5, 5.2, 0], ease(k)), fov: 56})},
+  {a: 25.4, b: 26.4, f: (t, k) => ({pos: lerp3([1.05, 1.66, 0.42], [0.95, 1.65, 0.38], k), look: [0, 1.6, 0.02], fov: 27})},
+  {a: 26.4, b: 27.4, f: (t, k) => ({pos: lerp3([-0.05, 0.5, 1.75], [-0.12, 0.48, 1.68], k), look: [-0.85, 0.42, 0.85], fov: 30})},
+  {a: 27.4, b: 28.8, f: (t, k) => ({pos: lerp3([-4.4, 1.15, 0.7], [-4.0, 1.1, 0.6], k), look: [8, 3.8, 0], fov: 50})},
+  {a: 28.8, b: 30.0, f: (t, k) => ({pos: add(lerp3([-6.5, 1.0, 0.2], [-7.2, 1.1, 0.3], easeOut(k)), shake(t, 0.12 * (1 - seg(t, 28.8, 29.8)))), look: [8, 4.6, 0], fov: 60})},
+  // the rooftop at sunrise
+  {a: 30.0, b: 35.5, f: (t, k) => ({pos: lerp3([0.2, 1.9, -1.0], [-0.1, 1.55, -2.6], ease(k)), look: [-0.3, 1.0, -14], fov: 42})},
+  {a: 35.5, b: 47.5, f: (t, k) => { const a = lerp(1.05, 0.25, ease(seg(t, 35.5, 46))); const r = lerp(2.9, 2.5, ease(k));
+    return {pos: [Math.sin(a) * r * 1.0 + 0.2, lerp(1.55, 1.35, ease(k)), -5.95 + Math.cos(a) * r], look: [-0.35, lerp(1.15, 1.25, k), -6.2], fov: 44}; }},
+];
+function add(a: V3, b: V3): V3 { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
+export function camAt(t: number): Cam {
+  const s = SHOTS.find((x) => t >= x.a && t < x.b) || SHOTS[SHOTS.length - 1];
+  return s.f(t, clamp01((t - s.a) / (s.b - s.a)));
+}
+
+// ---------------------------------------------------------------- SLOW MOTION, baked into the film
+// Before each shot the story slows to 0.3x (so the freeze on the website lands on a smooth frame), holds,
+// then eases back to full speed after her tap. Story time s -> film (real) time r.
+export const CUE_STORY = [14.4, 15.8, 17.2, 18.6, 20.0, 21.4, 27.55];
+const SLOW = 0.3, PRE = 0.6, POST = 0.3, RAMP = 0.25;
+export function speedAt(s: number) {
+  let v = 1;
+  for (const c of CUE_STORY) {
+    if (s >= c - PRE && s < c) v = Math.min(v, 1 - (1 - SLOW) * smooth(seg(s, c - PRE, c - PRE + RAMP)));
+    else if (s >= c && s < c + POST) v = Math.min(v, SLOW + (1 - SLOW) * smooth(seg(s, c, c + POST)));
+  }
+  return v;
+}
+const DS = 1 / 1200, N_S = Math.ceil(DURATION / DS) + 1, R_OF = new Float64Array(N_S);
+for (let i = 1; i < N_S; i++) R_OF[i] = R_OF[i - 1] + DS / speedAt((i - 0.5) * DS);
+export const REAL_DURATION = R_OF[N_S - 1];
+export function realOf(s: number) { const k = Math.min(N_S - 1, Math.max(0, s / DS)), i = Math.floor(k); return i >= N_S - 1 ? R_OF[N_S - 1] : R_OF[i] + (R_OF[i + 1] - R_OF[i]) * (k - i); }
+export function storyOf(r: number) {
+  let lo = 0, hi = N_S - 1; if (r <= 0) return 0; if (r >= R_OF[hi]) return DURATION;
+  while (hi - lo > 1) { const m = (lo + hi) >> 1; if (R_OF[m] <= r) lo = m; else hi = m; }
+  return (lo + (r - R_OF[lo]) / (R_OF[hi] - R_OF[lo])) * DS;
+}
+</script>
+<script>
+const $ = (id) => document.getElementById(id);
+const film = $('film'), CUES = JSON.parse($('cues').textContent), CODE = $('code').textContent.replace(/^\n/, '');
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+// ---------------------------------------------------------------- arcade sounds, synthesized
+let ac = null;
+function audio() { if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} } if (ac && ac.state === 'suspended') ac.resume(); return ac; }
+function beep(f, dur = 0.07, type = 'square', vol = 0.06, slide = 0) {
+  const a = ac; if (!a) return; const o = a.createOscillator(), g = a.createGain(), t = a.currentTime;
+  o.type = type; o.frequency.setValueAtTime(f, t); if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, f + slide), t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+function pew() { beep(1100, 0.16, 'triangle', 0.08, -700); beep(1650, 0.08, 'sine', 0.04, -900); }   // a clean zip, no noise
+// fade the film's own sound in/out around each freeze so it never clicks or crackles
+let fadeRaf = 0;
+function fadeTo(v, ms) {
+  cancelAnimationFrame(fadeRaf); const v0 = film.volume, t0 = performance.now();
+  (function step() { const k = Math.min(1, (performance.now() - t0) / ms); film.volume = v0 + (v - v0) * k; if (k < 1) fadeRaf = requestAnimationFrame(step); })();
+}
+function coin() { [988, 1319].forEach((f, i) => setTimeout(() => beep(f, i ? 0.35 : 0.09, 'square', 0.07), i * 90)); }
+
+// ---------------------------------------------------------------- 1. the boot sequence (plays on its own)
+const log = $('log'), hex = $('hex'), bar = $('bar');
+async function typeLine(html, speed = 14) {
+  const tmp = document.createElement('div'); tmp.innerHTML = html; const text = tmp.textContent;
+  const line = document.createElement('div'); log.appendChild(line);
+  for (let i = 1; i <= text.length; i += 2) { line.textContent = text.slice(0, i); if (!reduce) await wait(speed); }
+  line.innerHTML = html;
+}
+function hexRows(start, n) {
+  const bytes = new TextEncoder().encode(CODE), rows = [];
+  for (let r = 0; r < n; r++) { const off = (start + r) * 16 % Math.max(16, bytes.length - 16), sl = bytes.slice(off, off + 16);
+    rows.push(off.toString(16).toUpperCase().padStart(6, '0') + '  ' + Array.from(sl, (b) => b.toString(16).toUpperCase().padStart(2, '0')).join(' ') + '  ' + Array.from(sl, (b) => b >= 32 && b < 127 ? String.fromCharCode(b) : '.').join('')); }
+  return rows.join('\n');
+}
+async function boot() {
+  await typeLine('<span class="hi">PHI-BIOS v4.20</span>  (C) HUDSON INDUSTRIES');
+  await typeLine('<span class="dim">MEMORY TEST ............</span> 640K OK');
+  await typeLine('<span class="dim">DETECTING HERO .........</span> <span class="hi">EMMA</span>');
+  await typeLine('<span class="dim">DETECTING DOG ..........</span> <span class="hi">1 GOOD DOG</span>');
+  await typeLine('<span class="dim">LOADING CITY.MAP .......</span> OK');
+  await typeLine('<span class="dim">SCANNING FOR BAD DAYS ..</span> <span class="rd">7 FOUND</span>');
+  await typeLine('<span class="dim">DECOMPRESSING FILM.BIN ...</span>');
+  const t0 = performance.now(), dur = reduce ? 200 : 3600;
+  await new Promise((done) => { (function step() {
+    const k = Math.min(1, (performance.now() - t0) / dur), rows = Math.max(6, Math.floor(hex.clientHeight / 15));
+    hex.textContent = hexRows(Math.floor(k * 900), rows);
+    const n = Math.round(k * 20); bar.textContent = '[' + '#'.repeat(n) + '-'.repeat(20 - n) + '] ' + String(Math.round(k * 100)).padStart(3) + '%';
+    k < 1 ? requestAnimationFrame(step) : done(); })(); });
+  bar.innerHTML = '[####################] 100%  <span class="hi">READY.</span>';
+  await wait(reduce ? 0 : 700);
+  $('bootscreen').hidden = true; $('title').hidden = false; $('start').focus({preventScroll: true});
+}
+boot();
+
+// ---------------------------------------------------------------- 2. PRESS START -> player select -> 3, 2, 1
+let started = false;
+$('start').addEventListener('click', async () => {
+  if (started) return; started = true;
+  audio(); coin();
+  film.muted = false; try { await film.play(); film.pause(); film.currentTime = 0; } catch (e) {}   // unlock sound while we still have her tap
+  $('title').hidden = true; $('select').hidden = false;
+  for (const r of document.querySelectorAll('.row')) { await wait(reduce ? 0 : 420); r.classList.add('on'); beep(660, 0.06); }
+  await wait(reduce ? 0 : 500); document.querySelector('.howto').classList.add('on'); beep(880, 0.1);
+  await wait(reduce ? 0 : 2400);
+  $('select').hidden = true; const c = $('count'); c.hidden = false;
+  for (const s of ['3', '2', '1', 'GO!']) { c.textContent = s; beep(s === 'GO!' ? 1320 : 660, s === 'GO!' ? 0.4 : 0.12, 'square', 0.08); await wait(reduce ? 0 : 700); }
+  play();
+});
+
+// ---------------------------------------------------------------- 3. the film, and her shots
+let next = 0, waiting = false, target = null;
+function videoRect() {
+  const W = innerWidth, H = innerHeight, cover = matchMedia('(max-aspect-ratio: 10/16)').matches;
+  const s = cover ? Math.max(W / 1080, H / 1920) : Math.min(W / 1080, H / 1920);
+  return {s, ox: (W - 1080 * s) / 2, oy: (H - 1920 * s) / 2};
+}
+function showTarget(c) {
+  const r = videoRect(), d = Math.round(Math.max(110, Math.min(innerWidth, innerHeight) * (c.boss ? 0.42 : 0.28)));
+  const x = Math.min(innerWidth - d / 2 - 8, Math.max(d / 2 + 8, r.ox + c.x * r.s)), y = Math.min(innerHeight - d - 8, Math.max(d / 2 + 8, r.oy + c.y * r.s));
+  target = document.createElement('button'); target.type = 'button'; target.className = 'target'; target.setAttribute('aria-label', 'Shoot ' + c.name);
+  target.style.cssText = `--d:${d}px; left:${x}px; top:${y}px`;
+  target.innerHTML = '<div class="pulse"></div><div class="ring"></div><div class="cross"></div><span>' + (c.boss ? 'FINISH IT!' : 'SHOOT!') + '</span>';
+  target.addEventListener('pointerdown', fire, {once: true});
+  document.body.appendChild(target); beep(520, 0.12, 'triangle', 0.05);
+}
+function fire(ev) {
+  ev && ev.preventDefault(); if (!waiting) return;
+  pew(); const t = target; t.classList.add('hit'); setTimeout(() => t.remove(), 300);
+  const f = $('flash'); f.style.transition = 'none'; f.style.opacity = .35; requestAnimationFrame(() => { f.style.transition = 'opacity .25s'; f.style.opacity = 0; });
+  waiting = false; next++; heartbeat(false); setTimeout(() => $('slow').classList.remove('on'), 400);
+  film.volume = 0; film.play(); fadeTo(1, 250);
+}
+function tick() {
+  requestAnimationFrame(tick);
+  if (waiting || film.paused || next >= CUES.length) return;
+  const c = CUES[next], ct = film.currentTime;
+  if (ct >= c.rt - 0.9) $('slow').classList.add('on');          // the slow motion is baked into the film
+  if (ct >= c.rt - 0.25 && film.volume === 1) fadeTo(0, 220);   // ease the sound out into the freeze
+  if (ct >= c.rt - 0.012) { film.pause(); waiting = true; showTarget(c); heartbeat(true); }
+}
+// a low heartbeat while time is frozen, so the pause feels intentional
+let hb = null;
+function heartbeat(on) {
+  clearInterval(hb); hb = null; if (!on || !ac) return;
+  const thump = (f, v) => beep(f, 0.16, 'sine', v, -25);
+  const beat = () => { thump(62, 0.22); setTimeout(() => thump(55, 0.15), 170); };
+  beat(); hb = setInterval(beat, 900);
+}
+requestAnimationFrame(tick);
+function play() {
+  $('crt').classList.add('gone'); setTimeout(() => { $('crt').hidden = true; }, 1000);
+  $('controls').classList.remove('on'); next = 0; waiting = false; if (target) target.remove();
+  heartbeat(false); cancelAnimationFrame(fadeRaf); film.volume = 1; film.currentTime = 0; film.muted = false;
+  film.play().catch(() => { film.controls = true; });
+}
+film.addEventListener('ended', () => $('controls').classList.add('on'));
+$('replay').addEventListener('click', () => { audio(); play(); });
+function paint(row) {
+  const cut = row.indexOf('// '), code = cut >= 0 ? row.slice(0, cut) : row, note = cut >= 0 ? row.slice(cut) : '';
+  return esc(code).replace(/('[^']*')|\b(const|let|function|return|for|if|of|else|new|export|type|import)\b|\b(\d+\.?\d*)\b/g,
+    (m, s, k, n) => s ? '<span class="s">' + s + '</span>' : k ? '<span class="k">' + k + '</span>' : '<span class="n">' + n + '</span>') + (note ? '<span class="c">' + esc(note) + '</span>' : '');
+}
+$('viewsrc').addEventListener('click', () => { const p = $('srcpre'); if (!p.innerHTML) p.innerHTML = CODE.split('\n').map(paint).join('\n'); $('source').hidden = false; });
+$('closesrc').addEventListener('click', () => { $('source').hidden = true; });
+</script>
+</body>
+</html>
